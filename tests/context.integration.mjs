@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+const b=await build({stdin:{contents:"export {paymentContext} from './app/financial.ts';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',write:false});
+const {paymentContext}=await import('data:text/javascript;base64,'+Buffer.from(b.outputFiles[0].text).toString('base64'));
+const base='http://127.0.0.1:5189',login=await fetch(base+'/signin-with-chatgpt?return_to=/',{redirect:'manual'}),cookie=login.headers.get('set-cookie')?.split(';')[0];
+const headers={cookie,'Content-Type':'application/json',origin:base};
+const get=async()=>{const r=await fetch(base+'/api/ledger',{headers});assert.equal(r.status,200);return r.json()};
+const post=async body=>{const r=await fetch(base+'/api/ledger',{method:'POST',headers,body:JSON.stringify(body)});return {status:r.status,body:await r.json()}};
+let first=await get();const pending={kind:'fee',person:'s0',date:'2026-11-13',amount:'0.01',account:'cash',category:'Tuition fee'},context=paymentContext(first.state,pending),otherId=crypto.randomUUID();
+assert.equal((await post({id:otherId,action:'transaction',version:first.version,payload:{kind:'income',date:'2026-11-13',amount:'0.01',account:'cash',category:'Test-only context change'}})).status,200);
+let second=await get(),id=crypto.randomUUID();const result=await post({id,action:'transaction',version:second.version,expectedContext:context,payload:pending});assert.equal(result.status,409);assert.equal(result.body.conflict,true);assert.ok(!(await get()).state.tx.some(t=>t.id===id));
+assert.equal((await post({id:crypto.randomUUID(),action:'transaction',version:second.version,payload:{kind:'reversal',original:otherId,date:'2026-11-13',amount:'0.01',account:'cash',notes:'Undo local-only context test'}})).status,200);
+console.log('PASS: actual API rejects stale financial context even with a fresh global version, without saving a payment');
