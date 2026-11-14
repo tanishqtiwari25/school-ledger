@@ -1,3 +1,4 @@
+import {accessRole} from '../../access-role';
 import {env} from 'cloudflare:workers';
 import {getChatGPTUser} from '../../chatgpt-auth';
 export const dynamic='force-dynamic';
@@ -5,7 +6,7 @@ export async function GET(req:Request){
  const user=await getChatGPTUser();if(!user)return Response.json({error:'Sign in required'},{status:401});
  const row=await env.DB!.prepare('SELECT data FROM ledger WHERE id=?').bind('school').first<{data:string}>();
  if(!row)return Response.json({backups:[]});
- const state=JSON.parse(row.data);const role=state.users.length?state.users.find((u:{email:string})=>u.email===user.email)?.role:'Admin';
+ const state=JSON.parse(row.data);const role=accessRole(state,user.email,env.AUTH_PROVIDER,env.BOOTSTRAP_ADMIN_EMAIL);
  if(role!=='Admin')return Response.json({error:'Only Admin can access recovery points.'},{status:403});
  const id=new URL(req.url).searchParams.get('id');
  if(id){const backup=await env.DB!.prepare('SELECT data FROM backups WHERE id=?').bind(id).first<{data:string}>();if(!backup)return Response.json({error:'Backup not found'},{status:404});return new Response(backup.data,{headers:{'Content-Type':'application/json','Cache-Control':'no-store','Content-Disposition':'attachment; filename="school-recovery.json"'}});}

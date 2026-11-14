@@ -1,0 +1,18 @@
+name: Verify School Ledger
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm run install:ci
+      - run: node node_modules/typescript/bin/tsc --noEmit
+      - run: npm run build
+      - run: node --test tests/completion.test.mjs tests/transport.test.mjs tests/offline.test.mjs tests/pwa.test.mjs tests/access.test.mjs

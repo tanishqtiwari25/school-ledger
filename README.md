@@ -81,3 +81,9 @@ Fresh hosted databases start in an explicitly labelled fictional sample workspac
 Recovery points are immutable D1 snapshots saved atomically with each successful ledger mutation. Settings lists the latest 100; older points remain stored. They share the application database and are not an independent disaster-recovery service. Download regular JSON copies to separate storage. Import only a trusted backup, review counts and currency, sync all devices, and type RESTORE BACKUP. Current access is retained and restore is audited. Encrypted device backups remain separate from server JSON backups.
 
 Completion checks: `node --test tests/completion.test.mjs tests/transport.test.mjs tests/offline.test.mjs tests/pwa.test.mjs` (29 tests), plus `node tests/recovery.integration.mjs` against the local preview for persistent recovery points, restore, initialization, idempotency and role authorization. Actual iPhone/Android installation and device-specific offline behavior still require testing on those devices.
+
+## Independent Cloudflare hosting
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for direct deployment, secure Access sign-in, migration checks and the real-school first-use checklist. Direct hosting verifies Cloudflare Access JWT signatures, issuer, audience and expiry; only the configured administrator email can bootstrap Admin. The existing Sites deployment uses its original platform identity integration.
+
+GitHub stores the project source; GitHub Pages cannot execute this server/database application. A public repository by itself does not complete production hosting. GitHub Actions now builds and runs all 34 automated checks on pushes and pull requests. The direct Cloudflare account authorization, real Access application configuration and live smoke tests must complete before calling the independent deployment ready for use.
