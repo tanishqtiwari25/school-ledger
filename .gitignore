@@ -46,3 +46,4 @@ yarn-error.log*
 
 # Generated direct Cloudflare deployment configuration
 /.cloudflare/
+/.netlify/

@@ -1,7 +1,7 @@
 import {readFile,writeFile,readdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
-const root=join(process.cwd(),'dist','client');
+const root=join(process.cwd(),process.argv[2]||'dist/client');
 async function files(dir,prefix=''){let all=[];for(const f of await readdir(dir,{withFileTypes:true})){const p=prefix+'/'+f.name;if(f.isDirectory())all.push(...await files(join(dir,f.name),p));else if(/\.(js|css|woff2?|png|svg|webmanifest)$/.test(f.name)&&f.name!=='sw.js')all.push(p)}return all}
 const assets=(await files(root)).sort();
 let sw=await readFile('public/sw.js','utf8');

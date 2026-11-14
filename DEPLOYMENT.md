@@ -1,5 +1,17 @@
 # Deployment and first use
 
+## Current deployment: Netlify Free
+
+The independent deployment is `https://school-ledger-tanishq.netlify.app` in the owner's Netlify account. The team was verified as `credit-free`, with 300 included monthly credits, no payment method and automatic top-ups disabled. Stay on Free. At the hard quota the service may pause; do not enable a trial, paid plan, recharge, custom domain purchase or paid add-on. Provider terms and quotas can change.
+
+The Netlify target uses a static React PWA, modern Netlify Functions, Netlify Identity and a persistent Postgres database. It reuses the same financial handlers as the original Worker deployment. The database adapter keeps the ledger version check, recovery snapshot and update in a single transaction with a row lock. Browser identity headers are ignored. The configured `BOOTSTRAP_ADMIN_EMAIL` is the only identity that can claim the initial administrator role; later access follows saved Admin/Accountant memberships.
+
+Deploy using `node node_modules/netlify-cli/bin/run.js deploy --prod --build`. The tracked `netlify/database/migrations/` schema is provisioned and applied by Netlify's deployment lifecycle. The build is `npm run build:netlify`; `.netlify/` contains local linkage and must remain ignored. Credentials and database URLs must not be printed or committed.
+
+The account owner must enable **Identity** at `https://app.netlify.com/projects/school-ledger-tanishq/identity`. This is a dashboard-only service setting. No Cloudflare Access or Cloudflare billing setup is used by the Netlify target. Keep email confirmation enabled. Open the app's **Sign in securely → Create approved account**, enter the configured owner's email and choose a private password, then confirm the email. Other staff must first have their approved email and role saved in Settings. The Identity validation function denies unapproved registrations; the financial API independently enforces saved membership on every request.
+
+Before calling this production-ready, verify deployed Identity sign-in, database persistence, receipts/reports and installed-device offline behavior. Never run payment write tests against real school records. Records in the old Sites database are separate and are not automatically migrated; use a reviewed JSON backup/restore if the old workspace contains real records.
+
 The application requires a server and database. GitHub stores its source. GitHub Pages cannot run this Worker or D1, and the source must not be published as a static site with disabled authentication.
 
 The existing OpenAI Sites deployment remains separate. A direct Cloudflare deployment uses **Cloudflare Access** to sign in, verifies its signed JWT on every request, and keeps the same database-enforced Admin and Accountant permissions. No passwords, access tokens, database snapshots or local offline vaults belong in GitHub.
