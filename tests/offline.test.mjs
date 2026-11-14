@@ -129,3 +129,20 @@ test('offline mixed fee receipts retain their transport allocation through sync 
  await store.enqueue({kind:'reversal',original:'offline-mixed',date:'2026-11-13',amount:'3000',account:'cash',notes:'Test component reversal'},'offline-mixed-refund');await store.sync(()=>{});
  assert.deepEqual(server.state.tx.find(t=>t.id==='offline-mixed-refund').feeAllocation,{tuition:-250000,transport:-50000});await store.forget();store.close();
 });
+
+test('multiple partial offline refunds reconcile exactly after connection loss and a lost server acknowledgement',async()=>{
+ const before=balance(server.state,'cash');store=new OfflineStore();await store.enable(pass,structuredClone(server));
+ await store.enqueue({...payment('1000'),tuitionAmount:'600',transportAmount:'400'},'partial-offline-payment');
+ const refund=(amount,transportAmount)=>({kind:'reversal',original:'partial-offline-payment',amount,transportAmount,date:'2026-11-13',notes:'Test-only partial refund requested'});
+ await store.enqueue(refund('250','100'),'partial-offline-r1');
+ await store.enqueue(refund('750','300'),'partial-offline-r2');
+ await assert.rejects(store.enqueue(refund('0.01','0'),'partial-offline-excess'),/already been reversed/);
+ network=false;await assert.rejects(store.sync(()=>{}),/disconnection/);assert.equal((await store.get()).queue.length,3);
+ network=true;lost=true;await assert.rejects(store.sync(()=>{}),/lost after/);
+ await store.sync(()=>{});assert.equal((await store.get()).queue.length,0);
+ for(const id of ['partial-offline-payment','partial-offline-r1','partial-offline-r2'])assert.equal(server.state.tx.filter(t=>t.id===id).length,1);
+ const original=server.state.tx.find(t=>t.id==='partial-offline-payment'),refunds=server.state.tx.filter(t=>t.reverses===original.id);
+ assert.equal(original.amount+refunds.reduce((a,t)=>a+t.amount,0),0);
+ for(const component of ['tuition','transport'])assert.equal(original.feeAllocation[component]+refunds.reduce((a,t)=>a+t.feeAllocation[component],0),0);
+ assert.equal(balance(server.state,'cash'),before);await store.forget();store.close();
+});

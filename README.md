@@ -86,4 +86,6 @@ Completion checks: `node --test tests/completion.test.mjs tests/transport.test.m
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for direct deployment, secure Access sign-in, migration checks and the real-school first-use checklist. Direct hosting verifies Cloudflare Access JWT signatures, issuer, audience and expiry; only the configured administrator email can bootstrap Admin. The existing Sites deployment uses its original platform identity integration.
 
-GitHub stores the project source; GitHub Pages cannot execute this server/database application. A public repository by itself does not complete production hosting. GitHub Actions now builds and runs all 34 automated checks on pushes and pull requests. The direct Cloudflare account authorization, real Access application configuration and live smoke tests must complete before calling the independent deployment ready for use.
+GitHub stores the project source; GitHub Pages cannot execute this server/database application. A public repository by itself does not complete production hosting. GitHub Actions now builds and runs all 35 automated checks on pushes and pull requests. The direct Cloudflare account authorization, real Access application configuration and live smoke tests must complete before calling the independent deployment ready for use.
+
+Final repeatable release check: `npm run verify` runs TypeScript checks, the production build and all 35 automated tests. The offline suite also covers multiple partial refunds after network loss and a lost server acknowledgement.
