@@ -47,6 +47,7 @@
     ".vinext",
     ".wrangler",
     ".sites-runtime",
+    ".netlify",
     "outputs",
     "work"
   ]

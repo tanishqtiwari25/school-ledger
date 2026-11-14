@@ -5,6 +5,7 @@ import {login,signup,logout,getUser,handleAuthCallback,acceptInvite,updateUser,r
 import FinanceApp from '../app/finance-app';
 import '../app/globals.css';
 import './signin.css';
+import {authMessage} from './auth-message';
 
 function App(){
  const [ready,setReady]=useState(false),[screen,setScreen]=useState('login'),[invite,setInvite]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[saving,setSaving]=useState(false);
@@ -17,7 +18,7 @@ function App(){
    else if(callback?.type==='recovery')setScreen('reset');
    else if(callback?.user){location.replace('/');return;}
    else {const user=await getUser();if(authPath&&user){location.replace('/');return;}}
-  }catch(e){setError(e instanceof Error?e.message:'Sign-in could not be completed. Please try again.');}
+  }catch(e){setError(authMessage(e));}
   finally{setReady(true);}
  })();const unsubscribe=onAuthChange(event=>{if(event==='logout'&&!location.pathname.includes('signout'))location.replace('/');});return unsubscribe;},[]);
  if(!ready)return <main className="authPage"><p role="status">Loading secure sign-in…</p></main>;
@@ -30,9 +31,9 @@ function App(){
   try{
    if(passwordScreen&&password!==data.get('confirmation'))throw Error('Passwords do not match.');
    if(screen==='recover'){await requestPasswordRecovery(email);setNotice('If your account exists, a password reset link has been sent to your email.');}
-   else if(screen==='signup'){await signup(email,password);setNotice('Check your email and open the confirmation link before signing in.');setScreen('login');}
+   else if(screen==='signup'){await signup(email,password);setNotice('Your account has been created. Open the confirmation email from School Ledger or Netlify, check Spam if needed, then return here to sign in.');setScreen('login');}
    else {if(screen==='invite')await acceptInvite(invite,password);else if(screen==='reset')await updateUser({password});else await login(email,password);location.replace('/');}
-  }catch(e){setError(e instanceof Error?e.message:'Unable to complete sign-in. Please try again.');}
+  }catch(e){setError(authMessage(e));}
   finally{setSaving(false);}
  }
  return <main className="authPage"><section className="authCard" aria-labelledby="authHeading"><div className="brandIcon"><School size={25} aria-hidden="true"/></div><h1 id="authHeading">{screen==='signup'?'Create your account':screen==='recover'?'Reset your password':passwordScreen?'Choose your password':'Sign in to School Ledger'}</h1><p className="authIntro">{screen==='signup'?'Use the email address your school administrator has approved.':screen==='recover'?'We will send a reset link to your registered email.':'Secure access to your school fees and accounts.'}</p>
