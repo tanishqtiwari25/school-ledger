@@ -1,28 +1,45 @@
 import React,{useEffect,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {School} from 'lucide-react';
-import {login,signup,logout,getUser,handleAuthCallback,acceptInvite,updateUser,requestPasswordRecovery,onAuthChange} from '@netlify/identity';
+import {login,signup,logout,getUser,refreshSession,handleAuthCallback,acceptInvite,updateUser,requestPasswordRecovery,onAuthChange} from '@netlify/identity';
 import FinanceApp from '../app/finance-app';
 import '../app/globals.css';
 import './signin.css';
 import {authMessage} from './auth-message';
+import {serverSession,type SessionStatus} from './session';
 
 function App(){
  const [ready,setReady]=useState(false),[screen,setScreen]=useState('login'),[invite,setInvite]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[saving,setSaving]=useState(false);
+ const [session,setSession]=useState<SessionStatus>('unavailable');
+ const offlineMode=new URLSearchParams(location.search).get('offline')==='1';
  const authPath=location.pathname.includes('signin')||location.pathname.includes('signout');
+ async function enterDashboard(){
+  let status=await serverSession();
+  if(status==='anonymous'){
+   await refreshSession();
+   status=await serverSession();
+  }
+  if(status==='authenticated'){location.replace('/');return;}
+  throw Error(status==='anonymous'?'server_session_rejected':'server_session_unavailable');
+ }
  useEffect(()=>{void(async()=>{
   try{
    if(location.pathname.includes('signout')){await logout();location.replace('/');return;}
    const callback=await handleAuthCallback();
    if(callback?.type==='invite'&&callback.token){setInvite(callback.token);setScreen('invite');}
    else if(callback?.type==='recovery')setScreen('reset');
-   else if(callback?.user){location.replace('/');return;}
-   else {const user=await getUser();if(authPath&&user){location.replace('/');return;}}
+   else if(callback?.user){await enterDashboard();return;}
+   else {
+    const user=await getUser();
+    const status=await serverSession();setSession(status);
+    if(authPath&&user&&status==='authenticated'){location.replace('/');return;}
+    if(authPath&&user&&status==='anonymous')setNotice('Your saved session has expired. Sign in again to continue.');
+   }
   }catch(e){setError(authMessage(e));}
   finally{setReady(true);}
  })();const unsubscribe=onAuthChange(event=>{if(event==='logout'&&!location.pathname.includes('signout'))location.replace('/');});return unsubscribe;},[]);
  if(!ready)return <main className="authPage"><p role="status">Loading secure sign-in…</p></main>;
- if(!authPath&&!invite&&screen!=='reset'&&!error)return <FinanceApp/>;
+ if(!authPath&&!invite&&screen!=='reset'&&!error&&(offlineMode||session!=='anonymous'))return <FinanceApp/>;
  const passwordScreen=['signup','invite','reset'].includes(screen);
  async function submit(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();if(saving)return;
@@ -34,7 +51,7 @@ function App(){
    if(resend){await signup(email,password);setNotice('A new confirmation email has been requested. In Gmail, search in:anywhere from:no-reply@netlify.com and open the newest confirmation link.');}
    else if(screen==='recover'){await requestPasswordRecovery(email);setNotice('If your account exists, a password reset link has been sent to your email.');}
    else if(screen==='signup'){await signup(email,password);setNotice('Your account has been created. Open the confirmation email from School Ledger or Netlify, check Spam if needed, then return here to sign in.');setScreen('login');}
-   else {if(screen==='invite')await acceptInvite(invite,password);else if(screen==='reset')await updateUser({password});else await login(email,password);location.replace('/');}
+   else {if(screen==='invite')await acceptInvite(invite,password);else if(screen==='reset')await updateUser({password});else await login(email,password);await enterDashboard();}
   }catch(e){setError(authMessage(e));}
   finally{setSaving(false);}
  }
@@ -49,6 +66,6 @@ function App(){
  {screen==='login'&&error.includes('email is not confirmed')&&<button className="authBack" type="submit" form="schoolSignIn" name="intent" value="resend" disabled={saving}>Resend confirmation email</button>}
  {!passwordScreen&&<div className="authLinks"><button disabled={saving} onClick={()=>{setScreen(screen==='login'?'recover':'login');setError('');setNotice('')}}>{screen==='login'?'Forgot password?':'Back to sign in'}</button>{screen==='login'&&<button disabled={saving} onClick={()=>{setScreen('signup');setError('');setNotice('')}}>Create approved account</button>}</div>}
  {screen==='signup'&&<button className="authBack" disabled={saving} onClick={()=>{setScreen('login');setError('')}}>Back to sign in</button>}
- <a className="authOffline" href="/">Open saved offline records</a></section></main>;
+ <a className="authOffline" href="/?offline=1">Open saved offline records</a></section></main>;
 }
 createRoot(document.getElementById('root')!).render(<App/>);

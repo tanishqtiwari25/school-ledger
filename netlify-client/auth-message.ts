@@ -1,6 +1,8 @@
 /** Translate provider errors without exposing technical authentication details. */
 export function authMessage(error:unknown){
  const message=error instanceof Error?error.message:'';
+ if(message==='server_session_rejected')return 'Your login was received, but a secure app session could not be established. Make sure this browser allows cookies for this site, then sign in again.';
+ if(message==='server_session_unavailable')return 'Secure login is temporarily unavailable. Check your connection and try signing in again.';
  if(/email not confirmed|email_not_confirmed/i.test(message))return 'Your account has been created, but your email is not confirmed. Look for an email from no-reply@netlify.com in Inbox or Spam, open its confirmation link, then sign in again. If it is missing, use Resend confirmation email below.';
  if(/invalid.grant|invalid login|invalid credentials/i.test(message))return 'The email address or password is incorrect. Check your details, or use Forgot password.';
  if(/already registered|already exists/i.test(message))return 'An account already exists for this email. Confirm the email if needed, then sign in or use Forgot password.';

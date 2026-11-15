@@ -14,7 +14,7 @@
     "db:generate": "drizzle-kit generate",
     "test:offline": "node --experimental-strip-types --test tests/offline.test.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/completion.test.mjs tests/transport.test.mjs tests/offline.test.mjs tests/pwa.test.mjs tests/access.test.mjs tests/netlify.test.mjs",
+    "test": "node --test tests/completion.test.mjs tests/transport.test.mjs tests/offline.test.mjs tests/pwa.test.mjs tests/access.test.mjs tests/netlify.test.mjs tests/session.test.mjs",
     "verify": "npm run typecheck && npm run build && npm test",
     "build:netlify": "vite build --config vite.netlify.config.ts && node scripts/prepare-pwa.mjs dist/netlify"
   },

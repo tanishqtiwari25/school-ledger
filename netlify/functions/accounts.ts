@@ -11,6 +11,7 @@ export default async function accounts(request:Request){
   // Identity verifies the session on the server. Browser identity headers and
   // client-supplied roles are never consulted.
   if(!user?.email)return Response.json({error:'Sign in to access school accounts.'},{status:401,headers});
+  if(new URL(request.url).pathname==='/api/auth/session'&&request.method==='GET')return Response.json({authenticated:true},{headers});
   const owner=process.env.BOOTSTRAP_ADMIN_EMAIL;
   if(!owner)return Response.json({error:'School administrator is not configured.'},{status:503,headers});
   const env={DB:new PostgresD1(getDatabase().pool as any) as unknown as D1Database,AUTH_PROVIDER:'netlify-identity',BOOTSTRAP_ADMIN_EMAIL:owner};
@@ -31,4 +32,4 @@ export default async function accounts(request:Request){
   return Response.json({error:'School accounts are temporarily unavailable. Please try again.'},{status:503,headers});
  }
 }
-export const config={path:['/api/ledger','/api/backups']};
+export const config={path:['/api/ledger','/api/backups','/api/auth/session']};
